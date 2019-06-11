@@ -35,10 +35,13 @@
 #include "../../../../external/libvterm/include/vterm.h"
 #include <string.h>
 
-#define USE_TEST_SHELL 0
-#define DEBUG_CALLBACKS 0
-#define DEBUG_IO 0
-#define DEBUG_SCROLLBACK 0
+#define YES 1
+#define NO 0
+
+#define USE_TEST_SHELL NO
+#define DEBUG_CALLBACKS NO
+#define DEBUG_IO YES
+#define DEBUG_SCROLLBACK NO
 #ifndef NELEM // from ../../../../libnativehelper/include/nativehelper/JNIHelp.h
 # define NELEM(x) ((int) (sizeof(x) / sizeof((x)[0])))
 #endif
@@ -346,13 +349,19 @@ status_t Terminal::run() {
         }
 
         // We know execvp(2) won't actually try to modify this.
+#define USE_SHELL NO
+#if USE_SHELL
         char *shell = const_cast<char*>("/system/bin/sh");
 #if USE_TEST_SHELL
         char *args[4] = {shell, "-c", "x=1; c=0; while true; do echo -e \"stop \e[00;3${c}mechoing\e[00m yourself! ($x)\"; x=$(( $x + 1 )); c=$((($c+1)%7)); if [ $x -gt 110 ]; then sleep 0.5; fi; done", NULL};
 #else
         char *args[2] = {shell, NULL};
 #endif
-
+#else
+        char * shell = const_cast<char*>("/system/bin/cat");
+        char *args[2] = {shell, NULL};
+//        char *args[4] = {shell, const_cast<char *>(">"), const_cast<char *>("/dev/null"), NULL};
+#endif
         execvp(shell, args);
         fprintf(stderr_save, "Cannot exec(%s) - %s\n", shell, strerror(errno));
         _exit(1);
@@ -362,6 +371,10 @@ status_t Terminal::run() {
     while (1) {
         char buffer[4096];
         ssize_t bytes = ::read(mMasterFd, buffer, sizeof buffer);
+//        bytes = 2;
+//        buffer[0] = 1;
+//        buffer[1] = '\n';
+//        buffer[2] = 0;
 #if DEBUG_IO
         ALOGD("read() returned %d bytes", bytes);
 #endif
@@ -700,11 +713,11 @@ int jniRegisterNativeMethods(JNIEnv *env, const char *className,
 }
 
 static JNINativeMethod gMethods[] = {
-    { "nativeInit", "(La/o/s/p/terminal/TerminalCallbacks;)J", (void*)com_android_terminal_Terminal_nativeInit },
+    { "nativeInit", "(La/o/s/p/libterminal/TerminalCallbacks;)J", (void*)com_android_terminal_Terminal_nativeInit },
     { "nativeDestroy", "(J)I", (void*)com_android_terminal_Terminal_nativeDestroy },
     { "nativeRun", "(J)I", (void*)com_android_terminal_Terminal_nativeRun },
     { "nativeResize", "(JIII)I", (void*)com_android_terminal_Terminal_nativeResize },
-    { "nativeGetCellRun", "(JIILa/o/s/p/terminal/Terminal$CellRun;)I", (void*)com_android_terminal_Terminal_nativeGetCellRun },
+    { "nativeGetCellRun", "(JIILa/o/s/p/libterminal/Terminal$CellRun;)I", (void*)com_android_terminal_Terminal_nativeGetCellRun },
     { "nativeGetRows", "(J)I", (void*)com_android_terminal_Terminal_nativeGetRows },
     { "nativeGetCols", "(J)I", (void*)com_android_terminal_Terminal_nativeGetCols },
     { "nativeGetScrollRows", "(J)I", (void*)com_android_terminal_Terminal_nativeGetScrollRows },
@@ -715,7 +728,7 @@ static JNINativeMethod gMethods[] = {
 int register_com_android_terminal_Terminal() {
     JNIEnv* env = JVM::GetEnv();
     ScopedLocalRef<jclass> localClass(env,
-            env->FindClass((const char *) "a/o/s/p/terminal/TerminalCallbacks"));
+            env->FindClass((const char *) "a/o/s/p/libterminal/TerminalCallbacks"));
 
     android::terminalCallbacksClass = reinterpret_cast<jclass>(env->NewGlobalRef(localClass.get()));
 
@@ -734,7 +747,7 @@ int register_com_android_terminal_Terminal() {
     android::bellMethod = env->GetMethodID(terminalCallbacksClass, "bell", "()I");
 
     ScopedLocalRef<jclass> cellRunLocal(env,
-            env->FindClass((const char *) "a/o/s/p/terminal/Terminal$CellRun"));
+            env->FindClass((const char *) "a/o/s/p/libterminal/Terminal$CellRun"));
     cellRunClass = reinterpret_cast<jclass>(env->NewGlobalRef(cellRunLocal.get()));
     cellRunDataField = env->GetFieldID(cellRunClass, "data", "[C");
     cellRunDataSizeField = env->GetFieldID(cellRunClass, "dataSize", "I");
@@ -742,7 +755,7 @@ int register_com_android_terminal_Terminal() {
     cellRunFgField = env->GetFieldID(cellRunClass, "fg", "I");
     cellRunBgField = env->GetFieldID(cellRunClass, "bg", "I");
 
-    return jniRegisterNativeMethods(env, "a/o/s/p/terminal/Terminal",
+    return jniRegisterNativeMethods(env, "a/o/s/p/libterminal/Terminal",
             gMethods, NELEM(gMethods));
 }
 

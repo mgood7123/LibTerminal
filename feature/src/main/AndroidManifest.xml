@@ -16,7 +16,7 @@
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:dist="http://schemas.android.com/apk/distribution"
-    package="a.o.s.p.terminal">
+    package="a.o.s.p.libterminal">
 
     <uses-permission android:name="android.permission.INTERNET" />
     <dist:module dist:instant="true" />

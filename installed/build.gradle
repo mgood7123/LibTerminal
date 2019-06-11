@@ -20,7 +20,7 @@ android {
     compileSdkVersion rootProject.compileSdk
 
     defaultConfig {
-        applicationId "a.o.s.p.terminal"
+        applicationId "a.o.s.p.libterminal"
         minSdkVersion rootProject.minSdk
         targetSdkVersion rootProject.compileSdk
         versionCode rootProject.versionCode
